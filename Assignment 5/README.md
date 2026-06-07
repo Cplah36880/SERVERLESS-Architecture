@@ -217,3 +217,169 @@ Expected:
 Received Event
 
 Successfully tagged instance i-1234567890abcdef
+
+Step 1: Add Triggering Event
+On the left side, click:
+AWS SERVICE EVENTS
+Then select:
+EC2
+You should see EC2-related events.
+Choose:
+EC2 Instance State-change Notification
+Drag it (or click the + button) into the Triggering Events box in the middle.
+
+Step 2: Configure the Event
+After adding the EC2 event, set:
+State = running
+This means:
+Whenever an EC2 instance enters RUNNING state
+→ EventBridge triggers Lambda
+
+Step 3: Add Target
+In the Targets box on the right:
+Click the + icon or drag a target.
+Choose:
+AWS Service
+Then:
+Lambda Function
+Select your Lambda function:
+AutoTagEC2
+
+Step 4: Configure Rule
+Click the Configure tab (next to Build).
+Enter:
+Rule Name:
+EC2LaunchTaggingRule
+Ensure:
+State: Enabled
+
+Step 5: Create Rule
+Click:
+Create
+(top-right button)
+
+Now do this:
+Step 1: Click "Event pattern (Filter)"
+In the middle box, click the blue button:
+Event pattern (Filter)
+that is visible below:
+EC2 Instance State-change Notification
+
+Step 2: Add a Filter
+A configuration panel should open.
+Look for something related to:
+state
+or
+detail.state
+Select:
+running
+only.
+If AWS shows a JSON editor, use:
+{
+ "detail": {
+   "state": ["running"]
+ }
+}
+
+Step 3: Add Lambda Target
+After configuring the filter:
+Click the + icon inside the Targets box on the right.
+Choose:
+AWS Service
+Then:
+Lambda Function
+Select your Lambda:
+AutoTagEC2
+
+Step 4: Configure Rule
+Click the Configure tab at the top (next to Build).
+Enter:
+Rule Name:
+EC2LaunchTaggingRule
+Keep:
+Event Bus: default
+State: Enabled
+
+Step 5: Create
+Click the orange:
+Create
+button.
+Do this:
+Click on state (the underlined word on the left side under detail).
+A popup opens (similar to the one currently showing "type": "string").
+Replace the contents with:
+[
+ "running"
+]
+or if AWS expects an object:
+{
+ "equals": ["running"]
+}
+Click Apply or Save in that popup.
+
+Even easier
+In the Event pattern (filter) box on the right, replace the current pattern with:
+{
+ "source": ["aws.ec2"],
+ "detail-type": ["EC2 Instance State-change Notification"],
+ "detail": {
+   "state": ["running"]
+ }
+}
+This explicitly tells EventBridge:
+Only trigger when an EC2 instance reaches the RUNNING state.
+After that:
+Click Targets tab on the left.
+Add target → Lambda Function.
+Select your AutoTagEC2 Lambda.
+Click Configure.
+Set Rule Name:
+EC2LaunchTaggingRule
+Click Create.
+Now perform the final test
+1. Verify Lambda is attached as the target
+Go to:
+EventBridge
+→ Rules
+→ EC2LaunchTaggingRule
+Check that under Targets you see:
+AutoTagEC2
+(or whatever your Lambda function name is).
+
+2. Launch a new EC2 instance
+Go to:
+EC2
+→ Instances
+→ Launch Instance
+Create a small test instance (t2.micro/t3.micro).
+Wait until the instance state becomes:
+Running
+
+3. Wait 1–2 minutes
+EventBridge triggers asynchronously, so give AWS a minute or two.
+
+4. Check Tags
+Open the newly launched instance.
+Go to:
+Tags
+You should see something like:
+Key
+Value
+LaunchDate
+2026-06-07
+Environment
+Internship
+
+(or whatever tags your Lambda code creates).
+
+5. Check CloudWatch Logs
+Go to:
+Lambda
+→ AutoTagEC2
+→ Monitor
+→ View CloudWatch Logs
+You should see messages such as:
+Received Event
+Tagged instance i-xxxxxxxxxxxx
+
+
